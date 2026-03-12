@@ -29,7 +29,7 @@ function nextRecurrence(task) {
 function getProgreso(t) {
   const e = parseDate(t.fechaEntrega);
   if (t.estatus==="terminado")  return TODAY<e  ? "A TIEMPO"    : "FINALIZADO";
-  if (t.estatus==="en proceso") return TODAY<=e ? "EN PROGRESO" : "CON RETRASO";
+  if (t.estatus==="en proceso") return TODAY<e ? "EN PROGRESO" : "CON RETRASO";
   if (t.estatus==="pendiente")  return TODAY>e  ? "CON RETRASO" : "PENDIENTE";
   return "—";
 }
