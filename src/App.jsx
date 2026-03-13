@@ -32,7 +32,7 @@ function nextRecurrence(task) {
 function getProgreso(t) {
   const e = parseDate(t.fechaEntrega);
   if (t.estatus==="terminado")  return TODAY<e  ? "A TIEMPO"    : "FINALIZADO";
-  if (t.estatus==="en proceso") return TODAY<e  ? "EN PROGRESO" : "CON RETRASO";
+  if (t.estatus==="en proceso") return TODAY<=e ? "EN EJECUCIÓN" : "CON RETRASO";
   if (t.estatus==="pendiente")  return TODAY>e  ? "CON RETRASO" : "PENDIENTE";
   return "—";
 }
@@ -56,7 +56,7 @@ function ganttColor(t) {
 }
 
 const PROG_P = {
-  "EN PROGRESO": {c:"#60a5fa",b:"rgba(59,130,246,.12)", br:"rgba(59,130,246,.35)"},
+  "EN EJECUCIÓN": {c:"#60a5fa",b:"rgba(59,130,246,.12)", br:"rgba(59,130,246,.35)"},
   "CON RETRASO": {c:"#f87171",b:"rgba(239,68,68,.12)",  br:"rgba(239,68,68,.35)"},
   "PENDIENTE":   {c:"#94a3b8",b:"rgba(100,116,139,.12)",br:"rgba(100,116,139,.35)"},
   "A TIEMPO":    {c:"#4ade80",b:"rgba(34,197,94,.12)",  br:"rgba(34,197,94,.35)"},
@@ -171,7 +171,7 @@ function exportCSV(tasks){
 }
 
 function exportPDF(tasks){
-  const pc=p=>({"EN PROGRESO":"#3b82f6","CON RETRASO":"#ef4444","PENDIENTE":"#64748b","A TIEMPO":"#22c55e","FINALIZADO":"#14b8a6"}[p]||"#64748b");
+  const pc=p=>({"EN EJECUCIÓN":"#3b82f6","CON RETRASO":"#ef4444","PENDIENTE":"#64748b","A TIEMPO":"#22c55e","FINALIZADO":"#14b8a6"}[p]||"#64748b");
   const ec=e=>({terminado:"#22c55e","en proceso":"#eab308",pendiente:"#64748b"}[e]||"#64748b");
   const tot=tasks.length,term=tasks.filter(t=>t.estatus==="terminado").length,proc=tasks.filter(t=>t.estatus==="en proceso").length,ret=tasks.filter(t=>getProgreso(t)==="CON RETRASO").length,pend=tasks.filter(t=>t.estatus==="pendiente").length;
   const pct=tot?Math.round((term/tot)*100):0;
@@ -653,7 +653,7 @@ export default function App(){
             <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr>
-                  {["TIPO","ACTIVIDAD","ÁREA","RESPONSABLE","F. ENTREGA","ESTATUS","PROGRESO","TIEMPO","DÍAS",...(isAdmin?[""]:[])].map((h,i)=><th key={i} style={S.th}>{h}</th>)}
+                  {["TIPO","ACTIVIDAD","ÁREA","RESPONSABLE","F. ENTREGA","ESTATUS","ALERTAS","TIEMPO","DÍAS",...(isAdmin?[""]:[])].map((h,i)=><th key={i} style={S.th}>{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {filteredTasks.length===0&&<tr><td colSpan={10} style={{textAlign:"center",padding:50,color:"#1e2d3d",fontSize:12}}>Sin actividades</td></tr>}
@@ -708,7 +708,7 @@ export default function App(){
             <div style={{overflowX:"auto"}}>
               <table style={{borderCollapse:"collapse",fontSize:10,minWidth:"max-content"}}>
                 <thead><tr>
-                  {[["TIPO",60],["ACTIVIDAD",180],["RESPONSABLE",120],["ESTATUS",90],["PROGRESO",100],["F.ENTREGA",85]].map(([h,w])=>(
+                  {[["TIPO",60],["ACTIVIDAD",180],["RESPONSABLE",120],["ESTATUS",90],["ALERTAS",100],["F.ENTREGA",85]].map(([h,w])=>(
                     <th key={h} style={{...S.th,minWidth:w,maxWidth:w,borderRight:"1px solid rgba(255,255,255,.03)"}}>{h}</th>
                   ))}
                   {monthDays.map(d=>{const isT=d===TODAY.getDate()&&ganttM===TODAY.getMonth()&&ganttY===TODAY.getFullYear(),wd=new Date(ganttY,ganttM,d).getDay(),wk=wd===0||wd===6;
