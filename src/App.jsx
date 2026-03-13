@@ -368,6 +368,13 @@ function TaskModal({task,isAdmin,areas,resps,userName,onSave,onClose}){
               ?<input style={inpS} type="date" value={f.fechaEntrega} onChange={e=>setF(p=>({...p,fechaEntrega:e.target.value}))}/>
               :<input style={disS} type="date" value={f.fechaEntrega} readOnly/>}
           </div>
+          {f.tipo==="recurrente"&&<div>
+            <label style={{...lbl,color:"#8b5cf6"}}>HORA DE CORTE</label>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <input style={{...inpS,width:"50%"}} type="time" value={f.horaFin||""} onChange={e=>setF(p=>({...p,horaFin:e.target.value}))}/>
+              <span style={{fontSize:9,color:"#475569",lineHeight:1.4}}>Fuera de este horario<br/>se activa CON RETRASO</span>
+            </div>
+          </div>}
           {f.tipo==="recurrente"&&<div style={{gridColumn:"1/-1"}}>
             <label style={lbl}>FRECUENCIA</label>
             <div style={{display:"flex",gap:8}}>
@@ -381,10 +388,6 @@ function TaskModal({task,isAdmin,areas,resps,userName,onSave,onClose}){
           </div>}
           {f.tipo==="recurrente"&&editing&&isAdmin&&<div style={{gridColumn:"1/-1",padding:"10px 14px",borderRadius:10,background:"rgba(234,179,8,.06)",border:"1px solid rgba(234,179,8,.2)"}}>
             <p style={{fontSize:10,color:"#fbbf24",margin:0}}>⚡ Puedes cambiar la fecha de esta instancia sin afectar el patrón de recurrencia.</p>
-          </div>}
-          {f.tipo==="recurrente"&&<div style={{gridColumn:"1/-1"}}>
-            <label style={lbl}>ALERTA HORA DE CORTE <span style={{color:"#475569",fontWeight:400,fontSize:9}}>(opcional — fuera de este horario se activa CON RETRASO)</span></label>
-            <input style={inpS} type="time" value={f.horaFin||""} onChange={e=>setF(p=>({...p,horaFin:e.target.value}))} placeholder="ej: 18:30"/>
           </div>}
           <div style={{gridColumn:"1/-1"}}>
             <label style={lbl}>ESTATUS</label>
