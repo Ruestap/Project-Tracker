@@ -16,6 +16,29 @@ const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto
 const DEFAULT_ADMIN = "admin1234";
 const DEFAULT_VISIT = "visit5678";
 
+/* ── HORARIO LABORAL ──
+   Lun–Vie: 08:30 – 18:30
+   Sábado:  08:30 – 12:00
+   Domingo: no laborable
+*/
+function isDentroHorario() {
+  const now = new Date();
+  const dow = now.getDay(); // 0=Dom,1=Lun,...,6=Sab
+  const hm  = now.getHours() * 60 + now.getMinutes();
+  const ini = 8 * 60 + 30;   // 08:30
+  const finSem = 18 * 60 + 30; // 18:30
+  const finSab = 12 * 60;      // 12:00
+  if (dow === 0) return false;                        // Domingo
+  if (dow >= 1 && dow <= 5) return hm >= ini && hm <= finSem; // Lun-Vie
+  if (dow === 6) return hm >= ini && hm <= finSab;   // Sábado
+  return false;
+}
+
+function horaFinLaboral() {
+  const dow = new Date().getDay();
+  return dow === 6 ? "12:00" : "18:30";
+}
+
 function nextRecurrence(task) {
   if (task.tipo !== "recurrente") return null;
   const base = parseDate(task.fechaEntrega);
@@ -31,9 +54,40 @@ function nextRecurrence(task) {
 
 function getProgreso(t) {
   const e = parseDate(t.fechaEntrega);
-  if (t.estatus==="terminado")  return TODAY<e  ? "A TIEMPO"    : "FINALIZADO";
-  if (t.estatus==="en proceso") return TODAY<=e ? "EN EJECUCIÓN" : "CON RETRASO";
-  if (t.estatus==="pendiente")  return TODAY>e  ? "CON RETRASO" : "PENDIENTE";
+  const now = new Date();
+  const esHoy = TODAY.getTime() === e.getTime();
+
+  // Determinar hora de corte:
+  // 1. Si la tarea tiene horaFin definida → usar esa
+  // 2. Si no → usar el horario laboral estándar (18:30 L-V / 12:00 Sáb)
+  function dentroDeCorte() {
+    const hm = now.getHours() * 60 + now.getMinutes();
+    if (t.horaFin) {
+      const [hh,mm] = t.horaFin.split(":").map(Number);
+      return hm <= hh * 60 + mm;
+    }
+    return isDentroHorario();
+  }
+
+  // Recurrente con horaFin: al pasar la hora de corte → FINALIZADO
+  if (t.tipo==="recurrente" && t.horaFin && t.estatus!=="terminado" && esHoy) {
+    if (!dentroDeCorte()) return "FINALIZADO";
+  }
+
+  if (t.estatus==="terminado") return TODAY<=e ? "A TIEMPO" : "FINALIZADO";
+
+  if (t.estatus==="en proceso") {
+    if (TODAY < e) return "EN EJECUCIÓN";
+    if (esHoy) return dentroDeCorte() ? "EN EJECUCIÓN" : "CON RETRASO";
+    return "CON RETRASO";
+  }
+
+  if (t.estatus==="pendiente") {
+    if (TODAY < e) return "PENDIENTE";
+    if (esHoy) return dentroDeCorte() ? "PENDIENTE" : "CON RETRASO";
+    return "CON RETRASO";
+  }
+
   return "—";
 }
 function getTiempo(t) {
@@ -328,6 +382,10 @@ function TaskModal({task,isAdmin,areas,resps,userName,onSave,onClose}){
           {f.tipo==="recurrente"&&editing&&isAdmin&&<div style={{gridColumn:"1/-1",padding:"10px 14px",borderRadius:10,background:"rgba(234,179,8,.06)",border:"1px solid rgba(234,179,8,.2)"}}>
             <p style={{fontSize:10,color:"#fbbf24",margin:0}}>⚡ Puedes cambiar la fecha de esta instancia sin afectar el patrón de recurrencia.</p>
           </div>}
+          {f.tipo==="recurrente"&&<div style={{gridColumn:"1/-1"}}>
+            <label style={lbl}>ALERTA HORA DE CORTE <span style={{color:"#475569",fontWeight:400,fontSize:9}}>(opcional — fuera de este horario se activa CON RETRASO)</span></label>
+            <input style={inpS} type="time" value={f.horaFin||""} onChange={e=>setF(p=>({...p,horaFin:e.target.value}))} placeholder="ej: 18:30"/>
+          </div>}
           <div style={{gridColumn:"1/-1"}}>
             <label style={lbl}>ESTATUS</label>
             <select style={inpS} value={f.estatus} onChange={e=>setF(p=>({...p,estatus:e.target.value}))}>
@@ -476,7 +534,7 @@ function VistaEjecutiva({tasks}){
 /* ══════════════════════════════════════════
    APP PRINCIPAL
 ══════════════════════════════════════════ */
-const EMPTY_TASK = {tipo:"tarea",actividad:"",area:"",responsable:"",fechaInicio:"",fechaEntrega:"",estatus:"pendiente",frecuencia:"",creadoPor:"admin"};
+const EMPTY_TASK = {tipo:"tarea",actividad:"",area:"",responsable:"",fechaInicio:"",fechaEntrega:"",horaFin:"",estatus:"pendiente",frecuencia:"",creadoPor:"admin"};
 
 export default function App(){
   const [role,     setRole]     = useState(null);
