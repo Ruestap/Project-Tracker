@@ -20,17 +20,20 @@ function nextRecurrence(task) {
   if (task.tipo !== "recurrente") return null;
   const base = parseDate(task.fechaEntrega);
   const next = new Date(base);
+  if (task.frecuencia === "diaria")    next.setDate(next.getDate()+1);
   if (task.frecuencia === "semanal")   next.setDate(next.getDate()+7);
   if (task.frecuencia === "quincenal") next.setDate(next.getDate()+14);
   if (task.frecuencia === "mensual")   next.setMonth(next.getMonth()+1);
-  return next.toISOString().slice(0,10);
+  const finStr = next.toISOString().slice(0,10);
+  const iniStr = task.frecuencia === "diaria" ? finStr : task.fechaEntrega;
+  return { ini: iniStr, fin: finStr };
 }
 
 function getProgreso(t) {
   const e = parseDate(t.fechaEntrega);
-  if (t.estatus==="terminado")  return TODAY<=e ? "A TIEMPO"    : "FINALIZADO";
-  if (t.estatus==="en proceso") return TODAY<=e ? "EN PROGRESO" : "CON RETRASO";
-  if (t.estatus==="pendiente")  return TODAY>=e ? "CON RETRASO" : "PENDIENTE";
+  if (t.estatus==="terminado")  return TODAY<e  ? "A TIEMPO"    : "FINALIZADO";
+  if (t.estatus==="en proceso") return TODAY<e  ? "EN PROGRESO" : "CON RETRASO";
+  if (t.estatus==="pendiente")  return TODAY>e  ? "CON RETRASO" : "PENDIENTE";
   return "—";
 }
 function getTiempo(t) {
@@ -68,16 +71,16 @@ const ESTAT_P = {
 const TIPO_META = {
   "tarea":      {icon:"📋",label:"Tarea",     color:"#6366f1"},
   "recurrente": {icon:"🔄",label:"Recurrente",color:"#8b5cf6"},
-  };
+};
 const avBg  = n=>{const h=(n||"?").split("").reduce((a,c)=>a+c.charCodeAt(0),0);return["#6366f1","#8b5cf6","#ec4899","#14b8a6","#f97316","#0ea5e9"][h%6];};
 const getIni= n=>(n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
 
 const INIT_TASKS = [
-  {id:"t1",tipo:"tarea",
+  {id:"t1",tipo:"tarea",actividad:"PPT Gerencial — Estatus Semanal",area:"Dirección",responsable:"Ana García",fechaInicio:"2026-03-04",fechaEntrega:"2026-03-10",estatus:"terminado",frecuencia:"",creadoPor:"admin"},
   {id:"t2",tipo:"recurrente",actividad:"PPT Gerencial — Estatus Semanal",area:"Dirección",responsable:"Ana García",fechaInicio:"2026-03-11",fechaEntrega:"2026-03-17",estatus:"en proceso",frecuencia:"semanal",creadoPor:"admin"},
   {id:"t3",tipo:"tarea",actividad:"Diseño de arquitectura del sistema",area:"Tecnología",responsable:"Carlos López",fechaInicio:"2026-03-05",fechaEntrega:"2026-03-20",estatus:"en proceso",frecuencia:"",creadoPor:"admin"},
   {id:"t4",tipo:"tarea",actividad:"Desarrollo módulo de pagos",area:"Tecnología",responsable:"María Torres",fechaInicio:"2026-03-10",fechaEntrega:"2026-03-30",estatus:"en proceso",frecuencia:"",creadoPor:"admin"},
-  {id:"t5",tipo:"tarea",
+  {id:"t5",tipo:"tarea",actividad:"Reporte mensual de avance",area:"PMO",responsable:"Luis Méndez",fechaInicio:"2026-03-01",fechaEntrega:"2026-03-31",estatus:"pendiente",frecuencia:"",creadoPor:"admin"},
   {id:"t6",tipo:"recurrente",actividad:"Reunión de sincronización de equipo",area:"PMO",responsable:"Sofía Ruiz",fechaInicio:"2026-03-03",fechaEntrega:"2026-03-07",estatus:"terminado",frecuencia:"semanal",creadoPor:"admin"},
 ];
 const INIT_AREAS = ["Dirección","PMO","Tecnología","RRHH","Finanzas","Operaciones","Calidad"];
@@ -314,7 +317,7 @@ function TaskModal({task,isAdmin,areas,resps,userName,onSave,onClose}){
           {f.tipo==="recurrente"&&<div style={{gridColumn:"1/-1"}}>
             <label style={lbl}>FRECUENCIA</label>
             <div style={{display:"flex",gap:8}}>
-              {["semanal","quincenal","mensual"].map(fr=>(
+              {["diaria","semanal","quincenal","mensual"].map(fr=>(
                 <button key={fr} onClick={()=>setF(p=>({...p,frecuencia:fr}))}
                   style={{flex:1,padding:"8px 4px",borderRadius:8,border:`2px solid ${f.frecuencia===fr?"#8b5cf6":"rgba(139,92,246,.25)"}`,background:f.frecuencia===fr?"rgba(139,92,246,.15)":"rgba(255,255,255,.02)",cursor:"pointer",color:f.frecuencia===fr?"#c4b5fd":"#64748b",fontSize:11,fontWeight:700,textTransform:"capitalize"}}>
                   {fr}
@@ -373,7 +376,6 @@ function VistaEjecutiva({tasks}){
   const proximos=tasks.filter(t=>t.estatus!=="terminado"&&diasRestantes(t)>=0&&diasRestantes(t)<=7).sort((a,b)=>diasRestantes(a)-diasRestantes(b));
   const atRisk=tasks.filter(t=>getProgreso(t)==="CON RETRASO");
   const recurrentes=tasks.filter(t=>t.tipo==="recurrente"&&t.estatus!=="terminado");
-  const entregables=tasks.filter(t=>t.tipo==="entregable"&&t.estatus!=="terminado").sort((a,b)=>diasRestantes(a)-diasRestantes(b));
   const cardS={background:"#0f1923",borderRadius:12,padding:"18px 20px",border:"1px solid rgba(255,255,255,.06)"};
   return(
     <div>
@@ -452,17 +454,17 @@ function VistaEjecutiva({tasks}){
         </div>
         <div style={cardS}>
           <div style={{fontSize:11,fontWeight:700,color:"#94a3b8",letterSpacing:".06em",marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
-            📊 ENTREGABLES PENDIENTES
-            <span style={{marginLeft:"auto",padding:"2px 8px",borderRadius:10,background:"rgba(245,158,11,.15)",color:"#fbbf24",fontSize:10,fontWeight:700}}>{entregables.length}</span>
+            📋 PRÓXIMOS VENCIMIENTOS
+            <span style={{marginLeft:"auto",padding:"2px 8px",borderRadius:10,background:"rgba(99,102,241,.15)",color:"#a5b4fc",fontSize:10,fontWeight:700}}>{proximos.length}</span>
           </div>
-          {entregables.length===0?<p style={{fontSize:11,color:"#334155",textAlign:"center",padding:"12px 0"}}>Sin entregables pendientes ✓</p>:
-          entregables.map(t=>{const dr=diasRestantes(t);return(
-            <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,background:"rgba(245,158,11,.04)",marginBottom:6,border:"1px solid rgba(245,158,11,.15)"}}>
+          {proximos.length===0?<p style={{fontSize:11,color:"#334155",textAlign:"center",padding:"12px 0"}}>Sin vencimientos próximos ✓</p>:
+          proximos.map(t=>{const dr=diasRestantes(t);return(
+            <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,background:"rgba(99,102,241,.04)",marginBottom:6,border:"1px solid rgba(99,102,241,.12)"}}>
               <div style={{flex:1}}>
-                <div style={{fontSize:11,fontWeight:600,color:"#fcd34d",maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={t.actividad}>{t.actividad}</div>
-                <div style={{fontSize:10,color:"#78716c",marginTop:2}}>{t.responsable} · {fmtDate(t.fechaEntrega)}</div>
+                <div style={{fontSize:11,fontWeight:600,color:"#a5b4fc",maxWidth:150,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={t.actividad}>{t.actividad}</div>
+                <div style={{fontSize:10,color:"#64748b",marginTop:2}}>{t.responsable} · {fmtDate(t.fechaEntrega)}</div>
               </div>
-              <span style={{fontSize:11,fontWeight:700,color:dr<0?"#ef4444":dr<=3?"#f97316":"#fbbf24",fontFamily:"monospace",flexShrink:0}}>{dr<0?`+${Math.abs(dr)}d`:dr===0?"Hoy":`${dr}d`}</span>
+              <span style={{fontSize:11,fontWeight:700,color:dr<0?"#ef4444":dr<=3?"#f97316":"#a5b4fc",fontFamily:"monospace",flexShrink:0}}>{dr<0?`+${Math.abs(dr)}d`:dr===0?"Hoy":`${dr}d`}</span>
             </div>
           );})}
         </div>
@@ -526,34 +528,34 @@ export default function App(){
     delete task._new;
     if(isNew) task.id = "t"+Date.now();
     // Recurrente marcado terminado: avanzar fechas de la misma tarea
-if(task.tipo==="recurrente" && task.estatus==="terminado"){
-  const nextDate=nextRecurrence(task);
-  if(nextDate){
-    const advanced={...task, estatus:"pendiente", fechaInicio:task.fechaEntrega, fechaEntrega:nextDate};
-    await fbSaveTask(advanced);
+    if(task.tipo==="recurrente" && task.estatus==="terminado"){
+      const nr=nextRecurrence(task);
+      if(nr){
+        const advanced={...task, estatus:"pendiente", fechaInicio:nr.ini, fechaEntrega:nr.fin};
+        await fbSaveTask(advanced);
+        setModal(null);
+        return;
+      }
+    }
+    await fbSaveTask(task);
     setModal(null);
-    return;
-  }
-}
-await fbSaveTask(task);
-setModal(null);
-};
+  };
 
-const markDone = async taskId => {
-const task=tasks.find(t=>t.id===taskId);
-if(!task) return;
-if(task.tipo==="recurrente"){
-  // Avanzar la misma tarea al siguiente período
-  const nextDate=nextRecurrence(task);
-  if(nextDate){
-    const advanced={...task, estatus:"pendiente", fechaInicio:task.fechaEntrega, fechaEntrega:nextDate};
-    await fbSaveTask(advanced);
-    return;
-  }
-}
-// Tarea normal: marcar terminado
-await fbSaveTask({...task, estatus:"terminado"});
-};
+  const markDone = async taskId => {
+    const task=tasks.find(t=>t.id===taskId);
+    if(!task) return;
+    if(task.tipo==="recurrente"){
+      // Avanzar la misma tarea al siguiente período
+      const nr=nextRecurrence(task);
+      if(nr){
+        const advanced={...task, estatus:"pendiente", fechaInicio:nr.ini, fechaEntrega:nr.fin};
+        await fbSaveTask(advanced);
+        return;
+      }
+    }
+    // Tarea normal: marcar terminado
+    await fbSaveTask({...task, estatus:"terminado"});
+  };
 
   const doDelete=async()=>{ await fbDeleteTask(delCfm); setDelCfm(null); };
 
@@ -715,7 +717,7 @@ await fbSaveTask({...task, estatus:"terminado"});
                 </tr></thead>
                 <tbody>
                   {filteredTasks.map(t=>{const prog=getProgreso(t),gc=ganttColor(t),m=TIPO_META[t.tipo]||TIPO_META.tarea;
-                    const barColor=t.tipo==="recurrente"?"#8b5cf6":t.tipo==="entregable"?"#f59e0b":gc;
+                    const barColor=t.tipo==="recurrente"?"#8b5cf6":gc;
                     return <tr key={t.id} onMouseEnter={e=>e.currentTarget.style.background="rgba(99,102,241,.03)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <td style={{...S.td,borderRight:"1px solid rgba(255,255,255,.03)",textAlign:"center"}}><span style={{fontSize:14}}>{m.icon}</span></td>
                       <td style={{...S.td,fontWeight:600,color:"#e2e8f0",borderRight:"1px solid rgba(255,255,255,.03)",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={t.actividad}>{t.actividad}</td>
@@ -736,7 +738,7 @@ await fbSaveTask({...task, estatus:"terminado"});
               </table>
             </div>
             <div style={{padding:"10px 18px",borderTop:"1px solid rgba(255,255,255,.04)",display:"flex",gap:18,flexWrap:"wrap"}}>
-              {[["#22c55e","Terminado"],["#eab308","En Proceso"],["#ef4444","Con Retraso"],["#8b5cf6","Recurrente"],["#f59e0b","Entregable"]].map(([c,l])=>(
+              {[["#22c55e","Terminado"],["#eab308","En Proceso"],["#ef4444","Con Retraso"],["#8b5cf6","Recurrente"]].map(([c,l])=>(
                 <div key={l} style={{display:"flex",alignItems:"center",gap:5,fontSize:10,color:"#475569"}}><div style={{width:12,height:8,borderRadius:2,background:c}}/>{l}</div>
               ))}
             </div>
