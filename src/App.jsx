@@ -653,7 +653,7 @@ export default function App(){
             <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                 <thead><tr>
-                  {["TIPO","ACTIVIDAD","ÁREA","RESPONSABLE","F. ENTREGA","ESTATUS","ALERTAS","TIEMPO","DÍAS",...(isAdmin?[""]:[])].map((h,i)=><th key={i} style={S.th}>{h}</th>)}
+                  {["TIPO","ACTIVIDAD","ÁREA","RESPONSABLE","F. ENTREGA","ESTATUS","ALERTA","TIEMPO","DÍAS",...(isAdmin?[""]:[])].map((h,i)=><th key={i} style={S.th}>{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {filteredTasks.length===0&&<tr><td colSpan={10} style={{textAlign:"center",padding:50,color:"#1e2d3d",fontSize:12}}>Sin actividades</td></tr>}
@@ -708,7 +708,7 @@ export default function App(){
             <div style={{overflowX:"auto"}}>
               <table style={{borderCollapse:"collapse",fontSize:10,minWidth:"max-content"}}>
                 <thead><tr>
-                  {[["TIPO",60],["ACTIVIDAD",180],["RESPONSABLE",120],["ESTATUS",90],["ALERTAS",100],["F.ENTREGA",85]].map(([h,w])=>(
+                  {[["TIPO",60],["ACTIVIDAD",180],["RESPONSABLE",120],["ESTATUS",90],["ALERTA",100],["F.ENTREGA",85]].map(([h,w])=>(
                     <th key={h} style={{...S.th,minWidth:w,maxWidth:w,borderRight:"1px solid rgba(255,255,255,.03)"}}>{h}</th>
                   ))}
                   {monthDays.map(d=>{const isT=d===TODAY.getDate()&&ganttM===TODAY.getMonth()&&ganttY===TODAY.getFullYear(),wd=new Date(ganttY,ganttM,d).getDay(),wk=wd===0||wd===6;
