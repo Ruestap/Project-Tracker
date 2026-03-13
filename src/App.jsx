@@ -57,9 +57,7 @@ function getProgreso(t) {
   const now = new Date();
   const esHoy = TODAY.getTime() === e.getTime();
 
-  // Determinar hora de corte:
-  // 1. Si la tarea tiene horaFin definida → usar esa
-  // 2. Si no → usar el horario laboral estándar (18:30 L-V / 12:00 Sáb)
+  // Verifica si la hora actual está dentro de la hora de corte de la tarea
   function dentroDeCorte() {
     const hm = now.getHours() * 60 + now.getMinutes();
     if (t.horaFin) {
@@ -69,23 +67,21 @@ function getProgreso(t) {
     return isDentroHorario();
   }
 
-  // Recurrente con horaFin: al pasar la hora de corte → FINALIZADO
-  if (t.tipo==="recurrente" && t.horaFin && t.estatus!=="terminado" && esHoy) {
-    if (!dentroDeCorte()) return "FINALIZADO";
-  }
-
+  // Tarea ya marcada terminada manualmente
   if (t.estatus==="terminado") return TODAY<=e ? "A TIEMPO" : "FINALIZADO";
 
+  // Lógica para EN PROCESO
   if (t.estatus==="en proceso") {
-    if (TODAY < e) return "EN EJECUCIÓN";
-    if (esHoy) return dentroDeCorte() ? "EN EJECUCIÓN" : "CON RETRASO";
-    return "CON RETRASO";
+    if (TODAY < e) return "EN EJECUCIÓN";                              // antes de fecha entrega
+    if (esHoy) return dentroDeCorte() ? "EN EJECUCIÓN" : "CON RETRASO"; // hoy: depende de hora corte
+    return "CON RETRASO";                                              // ya pasó la fecha
   }
 
+  // Lógica para PENDIENTE
   if (t.estatus==="pendiente") {
-    if (TODAY < e) return "PENDIENTE";
-    if (esHoy) return dentroDeCorte() ? "PENDIENTE" : "CON RETRASO";
-    return "CON RETRASO";
+    if (TODAY < e) return "PENDIENTE";                                 // antes de fecha entrega
+    if (esHoy) return dentroDeCorte() ? "PENDIENTE" : "CON RETRASO";  // hoy: depende de hora corte
+    return "CON RETRASO";                                              // ya pasó la fecha
   }
 
   return "—";
@@ -310,7 +306,7 @@ function LoginScreen({adminPin,visitorPin,onLogin}){
 /* ══ MODAL TAREA ══ */
 function TaskModal({task,isAdmin,areas,resps,userName,onSave,onClose}){
   const editing=!!task.id&&!task._new;
-  const [f,setF]=useState({horaFin:"", ...task});
+  const [f,setF]=useState({horaInicio:"", horaFin:"", ...task});
   const [err,setErr]=useState("");
   const inpS={width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #c8d8e8",background:"#f8fafc",color:"#1a2f4a",fontSize:12,outline:"none",boxSizing:"border-box"};
   const disS={...inpS,border:"1px solid #e2e8f0",background:"#f0f4f8",color:"#94a3b8",cursor:"not-allowed"};
@@ -369,10 +365,14 @@ function TaskModal({task,isAdmin,areas,resps,userName,onSave,onClose}){
               :<input style={disS} type="date" value={f.fechaEntrega} readOnly/>}
           </div>
           {f.tipo==="recurrente"&&<div>
-            <label style={{...lbl,color:"#8b5cf6"}}>HORA DE CORTE</label>
+            <label style={{...lbl,color:"#8b5cf6"}}>HORA DE INICIO</label>
+            <input style={inpS} type="time" value={f.horaInicio||""} onChange={e=>setF(p=>({...p,horaInicio:e.target.value}))} placeholder="08:30"/>
+          </div>}
+          {f.tipo==="recurrente"&&<div>
+            <label style={{...lbl,color:"#e17055"}}>HORA DE CORTE</label>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <input style={{...inpS,width:"50%"}} type="time" value={f.horaFin||""} onChange={e=>setF(p=>({...p,horaFin:e.target.value}))}/>
-              <span style={{fontSize:9,color:"#5a7a9a",lineHeight:1.4}}>Fuera de este horario<br/>se activa CON RETRASO</span>
+              <input style={inpS} type="time" value={f.horaFin||""} onChange={e=>setF(p=>({...p,horaFin:e.target.value}))} placeholder="18:30"/>
+              <span style={{fontSize:9,color:"#5a7a9a",lineHeight:1.4}}>Pasada esta hora<br/>→ CON RETRASO</span>
             </div>
           </div>}
           {f.tipo==="recurrente"&&<div style={{gridColumn:"1/-1"}}>
@@ -537,7 +537,7 @@ function VistaEjecutiva({tasks}){
 /* ══════════════════════════════════════════
    APP PRINCIPAL
 ══════════════════════════════════════════ */
-const EMPTY_TASK = {tipo:"tarea",actividad:"",area:"",responsable:"",fechaInicio:"",fechaEntrega:"",horaFin:"",estatus:"pendiente",frecuencia:"",creadoPor:"admin"};
+const EMPTY_TASK = {tipo:"tarea",actividad:"",area:"",responsable:"",fechaInicio:"",fechaEntrega:"",horaInicio:"",horaFin:"",estatus:"pendiente",frecuencia:"",creadoPor:"admin"};
 
 export default function App(){
   const [role,     setRole]     = useState(null);
@@ -736,10 +736,12 @@ export default function App(){
                         <td style={S.td}>
                           <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-start"}}>
                             <Badge c={PROG_P[prog].c} b={PROG_P[prog].b} br={PROG_P[prog].br}>{prog}</Badge>
-                            {t.tipo==="recurrente"&&t.horaFin&&(
-                              <span style={{fontSize:9,color:"#8b5cf6",fontFamily:"monospace",display:"flex",alignItems:"center",gap:3}}>
-                                🕐 {t.horaFin}
-                              </span>
+                            {t.tipo==="recurrente"&&(t.horaInicio||t.horaFin)&&(
+                              <div style={{display:"flex",gap:4,alignItems:"center",marginTop:2}}>
+                                {t.horaInicio&&<span style={{fontSize:9,color:"#00b5b4",fontFamily:"monospace",display:"flex",alignItems:"center",gap:2}}>▶ {t.horaInicio}</span>}
+                                {t.horaInicio&&t.horaFin&&<span style={{fontSize:8,color:"#94a3b8"}}>→</span>}
+                                {t.horaFin&&<span style={{fontSize:9,color:"#e17055",fontFamily:"monospace",display:"flex",alignItems:"center",gap:2}}>■ {t.horaFin}</span>}
+                              </div>
                             )}
                           </div>
                         </td>
