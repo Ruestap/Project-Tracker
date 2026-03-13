@@ -68,17 +68,16 @@ const ESTAT_P = {
 const TIPO_META = {
   "tarea":      {icon:"📋",label:"Tarea",     color:"#6366f1"},
   "recurrente": {icon:"🔄",label:"Recurrente",color:"#8b5cf6"},
-  "entregable": {icon:"📊",label:"Entregable",color:"#f59e0b"},
-};
+  };
 const avBg  = n=>{const h=(n||"?").split("").reduce((a,c)=>a+c.charCodeAt(0),0);return["#6366f1","#8b5cf6","#ec4899","#14b8a6","#f97316","#0ea5e9"][h%6];};
 const getIni= n=>(n||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
 
 const INIT_TASKS = [
-  {id:"t1",tipo:"entregable",actividad:"PPT Gerencial — Estatus Semanal",area:"Dirección",responsable:"Ana García",fechaInicio:"2026-03-04",fechaEntrega:"2026-03-10",estatus:"terminado",frecuencia:"",creadoPor:"admin"},
+  {id:"t1",tipo:"tarea",
   {id:"t2",tipo:"recurrente",actividad:"PPT Gerencial — Estatus Semanal",area:"Dirección",responsable:"Ana García",fechaInicio:"2026-03-11",fechaEntrega:"2026-03-17",estatus:"en proceso",frecuencia:"semanal",creadoPor:"admin"},
   {id:"t3",tipo:"tarea",actividad:"Diseño de arquitectura del sistema",area:"Tecnología",responsable:"Carlos López",fechaInicio:"2026-03-05",fechaEntrega:"2026-03-20",estatus:"en proceso",frecuencia:"",creadoPor:"admin"},
   {id:"t4",tipo:"tarea",actividad:"Desarrollo módulo de pagos",area:"Tecnología",responsable:"María Torres",fechaInicio:"2026-03-10",fechaEntrega:"2026-03-30",estatus:"en proceso",frecuencia:"",creadoPor:"admin"},
-  {id:"t5",tipo:"entregable",actividad:"Reporte mensual de avance",area:"PMO",responsable:"Luis Méndez",fechaInicio:"2026-03-01",fechaEntrega:"2026-03-31",estatus:"pendiente",frecuencia:"",creadoPor:"admin"},
+  {id:"t5",tipo:"tarea",
   {id:"t6",tipo:"recurrente",actividad:"Reunión de sincronización de equipo",area:"PMO",responsable:"Sofía Ruiz",fechaInicio:"2026-03-03",fechaEntrega:"2026-03-07",estatus:"terminado",frecuencia:"semanal",creadoPor:"admin"},
 ];
 const INIT_AREAS = ["Dirección","PMO","Tecnología","RRHH","Finanzas","Operaciones","Calidad"];
@@ -632,7 +631,7 @@ await fbSaveTask({...task, estatus:"terminado"});
         {tab===1&&<div>
           <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
             <div style={{display:"flex",gap:4}}>
-              {[["todos","Todos"],["tarea","📋 Tareas"],["recurrente","🔄 Recurrentes"],["entregable","📊 Entregables"]].map(([v,l])=>(
+              {[["todos","Todos"],["tarea","📋 Tareas"],["recurrente","🔄 Recurrentes"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setFilterTipo(v)}
                   style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${filterTipo===v?"rgba(99,102,241,.5)":"rgba(255,255,255,.06)"}`,background:filterTipo===v?"rgba(99,102,241,.15)":"rgba(255,255,255,.02)",color:filterTipo===v?"#a5b4fc":"#475569",cursor:"pointer",fontSize:10,fontWeight:600}}>
                   {l}
