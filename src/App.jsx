@@ -526,36 +526,35 @@ export default function App(){
     const task = {...newTask};
     delete task._new;
     if(isNew) task.id = "t"+Date.now();
-    await fbSaveTask(task);
-    if(task.tipo==="recurrente"&&task.estatus==="terminado"){
-      const nextDate=nextRecurrence(task);
-      if(nextDate){
-        const already=tasks.some(t=>t.actividad===task.actividad&&t.estatus!=="terminado"&&t.id!==task.id);
-        if(!already){
-          const next={...task,id:"t"+Date.now()+1,estatus:"pendiente",fechaInicio:task.fechaEntrega,fechaEntrega:nextDate};
-          await fbSaveTask(next);
-        }
-      }
-    }
+    // Recurrente marcado terminado: avanzar fechas de la misma tarea
+if(task.tipo==="recurrente" && task.estatus==="terminado"){
+  const nextDate=nextRecurrence(task);
+  if(nextDate){
+    const advanced={...task, estatus:"pendiente", fechaInicio:task.fechaEntrega, fechaEntrega:nextDate};
+    await fbSaveTask(advanced);
     setModal(null);
-  };
+    return;
+  }
+}
+await fbSaveTask(task);
+setModal(null);
+};
 
-  const markDone = async taskId => {
-    const task=tasks.find(t=>t.id===taskId);
-    if(!task) return;
-    const updated={...task,estatus:"terminado"};
-    await fbSaveTask(updated);
-    if(task.tipo==="recurrente"){
-      const already=tasks.some(t=>t.actividad===task.actividad&&t.estatus!=="terminado"&&t.id!==taskId);
-      if(!already){
-        const nextDate=nextRecurrence(task);
-        if(nextDate){
-          const next={...task,id:"t"+Date.now(),estatus:"pendiente",fechaInicio:task.fechaEntrega,fechaEntrega:nextDate};
-          await fbSaveTask(next);
-        }
-      }
-    }
-  };
+const markDone = async taskId => {
+const task=tasks.find(t=>t.id===taskId);
+if(!task) return;
+if(task.tipo==="recurrente"){
+  // Avanzar la misma tarea al siguiente período
+  const nextDate=nextRecurrence(task);
+  if(nextDate){
+    const advanced={...task, estatus:"pendiente", fechaInicio:task.fechaEntrega, fechaEntrega:nextDate};
+    await fbSaveTask(advanced);
+    return;
+  }
+}
+// Tarea normal: marcar terminado
+await fbSaveTask({...task, estatus:"terminado"});
+};
 
   const doDelete=async()=>{ await fbDeleteTask(delCfm); setDelCfm(null); };
 
