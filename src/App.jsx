@@ -556,6 +556,8 @@ export default function App(){
   const [pinModal, setPinModal] = useState(false);
   const [filterTipo, setFilterTipo] = useState("todos");
   const [filterArea, setFilterArea] = useState("todas");
+  const [filterResp, setFilterResp] = useState("todos");
+  const [filterEstatus, setFilterEstatus] = useState("todos");
   const isAdmin = role==="admin";
 
   /* ── Firebase listeners en tiempo real ── */
@@ -634,8 +636,10 @@ export default function App(){
   const filteredTasks=useMemo(()=>tasks.filter(t=>{
     if(filterTipo!=="todos"&&t.tipo!==filterTipo)return false;
     if(filterArea!=="todas"&&t.area!==filterArea)return false;
+    if(filterResp!=="todos"&&t.responsable!==filterResp)return false;
+    if(filterEstatus!=="todos"&&t.estatus!==filterEstatus)return false;
     return true;
-  }),[tasks,filterTipo,filterArea]);
+  }),[tasks,filterTipo,filterArea,filterResp,filterEstatus]);
 
   const daysInMonth=new Date(ganttY,ganttM+1,0).getDate();
   const monthDays=Array.from({length:daysInMonth},(_,i)=>i+1);
@@ -692,7 +696,8 @@ export default function App(){
         {tab===0&&<VistaEjecutiva tasks={tasks}/>}
 
         {tab===1&&<div>
-          <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+            {/* Tipo */}
             <div style={{display:"flex",gap:4}}>
               {[["todos","Todos"],["tarea","📋 Tareas"],["recurrente","🔄 Recurrentes"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setFilterTipo(v)}
@@ -701,14 +706,40 @@ export default function App(){
                 </button>
               ))}
             </div>
+            {/* Área */}
             <select value={filterArea} onChange={e=>setFilterArea(e.target.value)}
-              style={{padding:"5px 10px",borderRadius:8,border:"1px solid #d8e4f0",background:"rgba(0,0,0,.02)",color:"#5a7a9a",cursor:"pointer",fontSize:10,outline:"none"}}>
+              style={{padding:"5px 10px",borderRadius:8,border:"1px solid #c8d8e8",background:"#ffffff",color:"#5a7a9a",cursor:"pointer",fontSize:10,outline:"none"}}>
               <option value="todas">Todas las áreas</option>
               {areas.map(a=><option key={a} value={a}>{a}</option>)}
             </select>
-            <span style={{fontSize:10,color:"#5a7a9a",marginLeft:4}}>{filteredTasks.length} actividades</span>
+            {/* Responsable */}
+            <select value={filterResp} onChange={e=>setFilterResp(e.target.value)}
+              style={{padding:"5px 10px",borderRadius:8,border:"1px solid #c8d8e8",background:"#ffffff",color:"#5a7a9a",cursor:"pointer",fontSize:10,outline:"none"}}>
+              <option value="todos">Todos los responsables</option>
+              {resps.map(r=><option key={r} value={r}>{r}</option>)}
+            </select>
+            {/* Estatus */}
+            <select value={filterEstatus} onChange={e=>setFilterEstatus(e.target.value)}
+              style={{padding:"5px 10px",borderRadius:8,border:"1px solid #c8d8e8",background:"#ffffff",color:"#5a7a9a",cursor:"pointer",fontSize:10,outline:"none"}}>
+              <option value="todos">Todos los estatus</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="en proceso">En Proceso</option>
+              <option value="terminado">Terminado</option>
+            </select>
+            {/* Contador + Reset */}
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{padding:"4px 10px",borderRadius:20,background:"#e0fafa",color:"#00b5b4",fontSize:10,fontWeight:700,border:"1px solid #99e6e6"}}>
+                {filteredTasks.length} actividad{filteredTasks.length!==1?"es":""}
+              </span>
+              {(filterTipo!=="todos"||filterArea!=="todas"||filterResp!=="todos"||filterEstatus!=="todos")&&(
+                <button onClick={()=>{setFilterTipo("todos");setFilterArea("todas");setFilterResp("todos");setFilterEstatus("todos");}}
+                  style={{padding:"4px 9px",borderRadius:8,border:"1px solid #fecaca",background:"#fff1f2",color:"#dc2626",cursor:"pointer",fontSize:9,fontWeight:700}}>
+                  ✕ Limpiar
+                </button>
+              )}
+            </div>
             <button onClick={()=>setModal({...EMPTY_TASK,_new:true,responsable:!isAdmin?userName:"",creadoPor:role})}
-              style={{marginLeft:"auto",padding:"7px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#00b5b4,#1a2f4a)",color:"white",cursor:"pointer",fontWeight:700,fontSize:11}}>＋ Nueva Actividad</button>
+              style={{marginLeft:"auto",padding:"7px 16px",borderRadius:9,border:"none",background:"#00b5b4",color:"white",cursor:"pointer",fontWeight:700,fontSize:11,boxShadow:"0 4px 15px rgba(0,181,180,.3)"}}>＋ Nueva Actividad</button>
           </div>
           <div style={{background:"#ffffff",borderRadius:12,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
             <div style={{overflowX:"auto"}}>
